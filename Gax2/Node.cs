@@ -3,29 +3,31 @@ using System.Numerics;
 public struct Node : IEquatable<Node>
 {
     public readonly int key;
+    private int hash = 1;
     public List<Stream> Streams = new();
     public Vector3 point;
     object Star = new();    //Put the star data here, or local star system data
-    
+
     public Node(int k, Vector3 p)
     {
         key = k;
         point = p;
+        hash = this.GetHashCode();
     }
 
     public override int GetHashCode()
     {
-        return (key * point.GetHashCode() * 6967)-1;
+        return (key * point.GetHashCode() * 6967) - 1;
     }
 
     public override bool Equals(object obj)
     {
-        return obj is Node && Equals((Node) obj);
+        return obj is Node && Equals((Node)obj);
     }
 
     public bool Equals(Node n)
     {
-        return this.GetHashCode() == n.GetHashCode() && Star == n.Star;
+        return hash == n.hash && Star == n.Star;
     }
 
     public override string ToString() => $"Node: {key}, Stream Count: {Streams.Count}\n{point.X}, {point.Y}, {point.Z}";

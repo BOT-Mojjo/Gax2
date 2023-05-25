@@ -10,7 +10,7 @@
 //     Stream temp = new(2,1);
 //     Console.WriteLine(temp.GetHashCode());
 //     test.Add(temp);
-    
+
 //     test2.Add(2);
 // }
 // test.Add(new(4,7));
@@ -19,9 +19,9 @@
 //     Console.WriteLine(testee.ToString());
 // }
 
-Galaxy testGax = new Galaxy(5, 2);
+Galaxy testGax = new Galaxy(50, 0.5);
 Stream temp = new(testGax.Nodes[1], testGax.Nodes[2]);
 
 // Console.WriteLine(test.Count());
-Console.WriteLine("done");
+Console.WriteLine("Finished");
 Console.ReadLine();

@@ -9,22 +9,25 @@ public class Galaxy
     {           //star count, maximum "autoconnect distance
         Nodes = new();
         Streams = new();
-        Console.WriteLine("Node generation");
-        for(int i = 0; i < count; i++) //Node Gen
+        Console.Write("Node Generation");
+        for (int i = 0; i < count; i++) //Node Gen
         {
             //creates stars with a random position inbetween 0,0,-0.5 to 10,10,0.5
-            Nodes.Add(i, new(i, new((float) rand.NextDouble()*10f, (float) rand.NextDouble()*10f, (float) rand.NextDouble()-0.5f)));
+            Nodes.Add(i, new(i, new((float)rand.NextDouble() * 10f, (float)rand.NextDouble() * 10f, (float)rand.NextDouble() - 0.5f)));
         }
+        Console.WriteLine(" ... Done!");
 
         StreamGeneration(StreamDistance);
 
         IsolatedNodePrevention();
+
+        IsolatedClusterPrevention();
     }
 
     public void CreateStream(Node n1, Node n2)
-    {
+    {   //this could and wwould cause shenanigans with pathfinding
+        if (n1.Equals(n2)) throw new($"Stream from Origin Node to Origin Node prohibited.\n{n1.ToString}\n");
         Stream tempStream = new(n1, n2);
-        if(n1.Equals(n2)) throw new($"Stream from Origin Node to Origin Node prohibited.\n{n1.ToString}");
         //if it's a new stream or an existing one
         if (!Streams.ContainsKey(tempStream.GetHashCode())) Streams.Add(tempStream.GetHashCode(), tempStream);
         //adds the stream to the stars known streams if it isn't already there
@@ -34,60 +37,115 @@ public class Galaxy
 
     private void StreamGeneration(double s)
     {
-        foreach(KeyValuePair<int, Node> node in Nodes)
+        Console.Write("Stream Generation");
+        foreach (KeyValuePair<int, Node> node in Nodes)
         {
-            foreach(KeyValuePair<int, Node> node2 in Nodes)
-            {   
-                if(node.Value.Equals(node2.Value)) continue;
-                if(Vector3.Distance(node.Value.point, node2.Value.point) > s) continue;
+            foreach (KeyValuePair<int, Node> node2 in Nodes)
+            {
+                if (node.Value.Equals(node2.Value)) continue;
+                if (Vector3.Distance(node.Value.point, node2.Value.point) > s) continue;
 
                 CreateStream(node.Value, node2.Value);
             }
         }
+        Console.WriteLine(" ... Done!");
     }
 
     private void IsolatedNodePrevention()
     {
-        foreach(KeyValuePair<int, Node> node in Nodes)
+        Console.Write("Node Isolation Prevention");
+        foreach (KeyValuePair<int, Node> node in Nodes)
         {
-            if(node.Value.Streams.Count > 0) continue;
+            if (node.Value.Streams.Count > 0) continue;
             Node tempNode = node.Value;
             double distance = double.MaxValue;
             //simple sort to find closest node
-            foreach(KeyValuePair<int, Node> node2 in Nodes)
+            foreach (KeyValuePair<int, Node> node2 in Nodes)
             {
                 //skipping the origin node
-                if(node.Equals(node2)) continue;
+                if (node.Equals(node2)) continue;
 
                 double tempDistance = Vector3.Distance(node.Value.point, node2.Value.point);
                 //if the distance is more than the current lest, skip
-                if(tempDistance > distance) continue;
+                if (tempDistance > distance) continue;
                 tempNode = node2.Value;
                 distance = tempDistance;
             }
             CreateStream(node.Value, tempNode);
         }
+        Console.WriteLine(" ... Done!");
     }
 
-    private void FloodPathsCheck()
+    private void IsolatedClusterPrevention()
     {
-        List<Node> pool = new();
-        pool.Add(Nodes[rand.Next(0, Nodes.Count+1)]);
-        while(true)
+        Console.Write("Isolated Cluster Prevention ");
+        List<Node> cluster = new();
+        while (true)
         {
-            int poolSize = pool.Count;
-            foreach(Node star in pool)
+            cluster = FloodCluster(Nodes[rand.Next(0, Nodes.Count)]);
+            if (cluster.Count == Nodes.Count) break; //It only goes past this point if there is an isolated cluster
+
+            List<Node> Isolatedcluster = new();
+            foreach (KeyValuePair<int, Node> isolated in Nodes)
+            {   //Finds an isolated cluster
+                if (cluster.Contains(isolated.Value)) continue;
+                Isolatedcluster.Add(isolated.Value);
+                break;
+            }
+            if (Isolatedcluster.Count == 0)
+                Isolatedcluster = FloodCluster(Isolatedcluster[0]);
+            List<Stream> potentialStreams = new();
+            foreach (Node node in cluster)
+            {   //creates streams between the clusters
+                Isolatedcluster.ForEach(node2 => potentialStreams.Add(new(node, node2)));
+            }
+            //Limits the new streams to a 5th of the smaller cluster.
+            Stream[] newStreams = new Stream[(int)Math.Ceiling((double)Math.Min(cluster.Count, Isolatedcluster.Count) / 5)];
+            //Keeps track of what nodes already has new streams
+            //In hopes of limiting chokepoints
+            List<Node> NodeRecord = new();
+            for (int i = 0; i < newStreams.Length; i++)
             {
-                foreach(Stream stream in star.Streams)
+                newStreams[i] = potentialStreams[0];
+                foreach (Stream stream in potentialStreams)
+                {   //if the potential new stream is smaller than the current new stream and it isn't connected to a current node 
+                    if (newStreams[i].Distance > stream.Distance && !(NodeRecord.Contains(stream.root0) || NodeRecord.Contains(stream.root1)))
+                    {
+                        newStreams[i] = stream;
+                    }
+                }
+                NodeRecord.Add(newStreams[i].root0);
+                NodeRecord.Add(newStreams[i].root1);
+            }
+            foreach (Stream stream in newStreams) //creates the new streams connecting the clusters
+            {
+                CreateStream(stream.root0, stream.root1);
+            }
+            Console.Write(".");
+        }
+        Console.WriteLine(" Done!");
+    }
+
+
+    private List<Node> FloodCluster(Node seed)
+    {
+        List<Node> cluster = new();
+        cluster.Add(seed);
+        while (true)
+        {
+            int clusterSize = cluster.Count; //Fills the cluster with stars
+            List<Node> clusterAdditions = new();
+            foreach (Node star in cluster)
+            {
+                foreach (Stream stream in star.Streams)
                 {
                     Node tempStar = stream.GetOpposite(star);
-                    if(!pool.Contains(tempStar)) pool.Add(tempStar);
+                    if (!cluster.Contains(tempStar) && !clusterAdditions.Contains(tempStar)) clusterAdditions.Add(tempStar);
                 }
             }
-            if(poolSize == pool.Count)
-            {
-                //TODO break statment and create closest stream between isolated pools
-            }
+            clusterAdditions.ForEach(node => cluster.Add(node));
+            if (cluster.Count == clusterSize) break;
         }
+        return cluster;
     }
 }
