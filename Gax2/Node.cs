@@ -17,7 +17,7 @@ public struct Node : IEquatable<Node>
 
     public override int GetHashCode()
     {
-        return (key * point.GetHashCode() * 6967) - 1;
+        return ((key+1) * point.GetHashCode() * 6967) - 1;
     }
 
     public override bool Equals(object obj)

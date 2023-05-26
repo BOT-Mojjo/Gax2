@@ -19,8 +19,12 @@
 //     Console.WriteLine(testee.ToString());
 // }
 
-Galaxy testGax = new Galaxy(50, 0.5);
+Galaxy testGax = new Galaxy(50, 0.1);
 Stream temp = new(testGax.Nodes[1], testGax.Nodes[2]);
+foreach(KeyValuePair<int, Node> node in testGax.Nodes)
+{
+    if(node.Value.Streams.Count > 3) Console.WriteLine(node.Value.Streams.Count +" "+ node.Value.key);
+}
 
 // Console.WriteLine(test.Count());
 Console.WriteLine("Finished");

@@ -44,6 +44,7 @@ public class Galaxy
             {
                 if (node.Value.Equals(node2.Value)) continue;
                 if (Vector3.Distance(node.Value.point, node2.Value.point) > s) continue;
+                if (node.Value.Streams.Count > 2 || node2.Value.Streams.Count > 2) continue;
 
                 CreateStream(node.Value, node2.Value);
             }
@@ -86,14 +87,16 @@ public class Galaxy
             if (cluster.Count == Nodes.Count) break; //It only goes past this point if there is an isolated cluster
 
             List<Node> Isolatedcluster = new();
-            foreach (KeyValuePair<int, Node> isolated in Nodes)
-            {   //Finds an isolated cluster
-                if (cluster.Contains(isolated.Value)) continue;
-                Isolatedcluster.Add(isolated.Value);
-                break;
+            while(Isolatedcluster.Count == 0)
+            {
+                int i = rand.Next(0, Nodes.Count);
+                if (cluster.Contains(Nodes[i])) continue;
+                Isolatedcluster.Add(Nodes[i]);
             }
+            //will never trigger?
             if (Isolatedcluster.Count == 0)
                 Isolatedcluster = FloodCluster(Isolatedcluster[0]);
+            
             List<Stream> potentialStreams = new();
             foreach (Node node in cluster)
             {   //creates streams between the clusters
