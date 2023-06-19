@@ -5,43 +5,78 @@ public class Galaxy
     Random rand = new Random();
     public Dictionary<int, Node> Nodes; //Key is index of creation. starts at 0
     public Dictionary<int, Stream> Streams; //Key is the HashCode of Value Stream
-    public Galaxy(int count, double StreamDistance, float Size)
+    private byte[,] NodeNoiseMap;
+    public Galaxy(int count, double StreamDistance, float size)
     {           //star count, maximum "autoconnect distance
-        Vector3 center = new(Size/2,Size/2, 0);
+        Vector3 center = new(size/2,size/2, 0);
         Nodes = new();
         Streams = new();
-        Console.Write("Node Generation");
-        for (int i = 0; i < count; i++) //Node Gen
-        {
-            //creates stars with a random position inbetween 0,0,-0.5 to 10,10,0.5
-            Node newNode = new(i, new((float)rand.NextDouble() * Size, (float) rand.NextDouble() * Size, (float)rand.NextDouble() - 0.5f));
-            // Node newNode = new(i, new((float)rand.NextDouble() * Size, (float) rand.NextDouble() * Size, 0));
-            //too close prevention
-            bool toClose = false;
-            foreach(KeyValuePair<int, Node> node in Nodes)
-            {
-                if(Vector3.Distance(newNode.point, node.Value.point) < Size/(count/15f))
-                {
-                    toClose = true;
-                    break;
-                }
-            }
-            //donut shape
-            if(Vector3.Distance(newNode.point, center) > (Size/2)*0.85 || Vector3.Distance(newNode.point, center) < (Size/2)*0.2 || toClose)
-            {
-                i--;
-                continue;
-            }
-            
-            Nodes.Add(i, newNode);
-        }
-        Console.WriteLine(" ... Done!");
+        NodeNoiseMap = new Byte[count/5,count/5];
+
+        NoiseMapPreperation(NodeNoiseMap.GetLength(0));
+
+        NodeGeneration(count, size);
 
         StreamGeneration(StreamDistance);
 
         IsolatedNodePrevention();
 
         // IsolatedClusterPrevention();
+    }
+
+    void NoiseMapPreperation(int mapSize)
+    {
+        Vector2 center = new(mapSize/2, mapSize/2);
+        float max = (mapSize/2)*0.95f;
+        float min = (mapSize/2)*0.2f;
+        for(int x = 0; x < mapSize; x++)
+        {
+            for(int y = 0; y < mapSize; y++)
+            {
+                float distance =Vector2.Distance(new(x,y), center);
+                if(distance > max || distance < min) NodeNoiseMap[x,y] = 255;
+            }
+        }
+    }
+
+    public void NodeGeneration(int amount, float size)
+    {
+        Console.Write("Node Generation");
+        double noiseMapScale = (amount/5)/size;
+        int abstractTooClose = (int) (size/(amount/15f));
+        while(Nodes.Count < amount)
+        {
+            Vector3 newPoint = PointGeneration((int)size);
+            (int x, int y) abstractPoint = ((int) (newPoint.X*noiseMapScale), (int) (newPoint.Y*noiseMapScale));
+            if(NodeNoiseMap[abstractPoint.x, abstractPoint.y] > rand.Next(0,255))
+            {
+                continue;
+            }
+
+            int XMin = abstractPoint.x - abstractTooClose;
+            if( XMin > 0) XMin = 0;
+
+            int YMin = abstractPoint.y - abstractTooClose;
+            if( YMin > 0) XMin = 0;
+
+            int XMax = abstractPoint.x + abstractTooClose;
+            if( XMax > NodeNoiseMap.GetLength(0)) XMax = 0;
+
+            int YMax = abstractPoint.y + abstractTooClose;
+            if( YMax > NodeNoiseMap.GetLength(1)) XMax = 0;
+
+
+            for(int x = XMin; x < XMax; x++)
+            {
+                for(int y = YMin; y < YMax; y++)
+                {
+                    NodeNoiseMap[x, y] = 255;
+                }   
+            }
+            int key = Nodes.Count+1;
+            Nodes.Add(key, new(key, newPoint));
+        }
+        Console.WriteLine(" ... Done!");
     }
 
     public void CreateStream(Node n1, Node n2)
@@ -176,4 +211,6 @@ public class Galaxy
         }
         return cluster;
     }
+
+    private Vector3 PointGeneration(int mapSize) => new((float)rand.NextDouble() * mapSize, (float) rand.NextDouble() * mapSize, (float)rand.NextDouble() - 0.5f);
 }
