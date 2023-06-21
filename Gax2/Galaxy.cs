@@ -21,7 +21,7 @@ public class Galaxy
 
         IsolatedNodePrevention();
 
-        // IsolatedClusterPrevention();
+        IsolatedClusterPrevention();
     }
 
     void NoiseMapPreperation(int mapSize)
@@ -40,7 +40,7 @@ public class Galaxy
     }
 
     public void NodeGeneration(int amount, float size)
-    {
+    {   //TODO: something clearly isn't working here. Nodes generate too close to eachother
         Console.Write("Node Generation");
         double noiseMapScale = (amount/5)/size;
         int abstractTooClose = (int) (size/(amount/15f));
@@ -97,9 +97,9 @@ public class Galaxy
         {
             foreach (KeyValuePair<int, Node> node2 in Nodes)
             {
-                if (node.Value.Equals(node2.Value)) continue;
                 if (Vector3.Distance(node.Value.point, node2.Value.point) > s) continue;
                 if (node.Value.Streams.Count > 2 || node2.Value.Streams.Count > 2) continue;
+                if (node.Value.Equals(node2.Value)) continue;
 
                 CreateStream(node.Value, node2.Value);
             }
@@ -153,33 +153,51 @@ public class Galaxy
             //     Isolatedcluster = FloodCluster(Isolatedcluster[0]);
             
             List<Stream> potentialStreams = new();
+            //can cause a System.OverflowException some how if the cluster size is too small????
+            Stream[] newStreams = new Stream[(int)Math.Ceiling((double) cluster.Count/(cluster.Count/4))];
+            
+            //Limits the new streams.
+            //can somehow result in an integer overflow exception??
+            //Keeps track of what nodes already has new streams
+            //In hopes of limiting chokepoints
+            List<Node> NodeRecord = new();
+            byte nullBreaker = 0;
             foreach (Node node in cluster)
             {   //creates streams between the clusters
                 // Nodes.ForEach(node2 => potentialStreams.Add(new(node, node2)));
                 foreach (KeyValuePair<int, Node> node2 in Nodes)
                 {
                     if(node.Equals(node2.Value) || cluster.Contains(node2.Value)) continue;
-                    potentialStreams.Add(new(node, node2.Value));
-                }
-            }
-            //Limits the new streams to a 5th of the smaller cluster.
-            Stream[] newStreams = new Stream[(int)Math.Ceiling((double) cluster.Count/ 5)];
-            //Keeps track of what nodes already has new streams
-            //In hopes of limiting chokepoints
-            List<Node> NodeRecord = new();
-            for (int i = 0; i < newStreams.Length; i++)
-            {
-                newStreams[i] = potentialStreams[0];
-                foreach (Stream stream in potentialStreams)
-                {   //if the potential new stream is smaller than the current new stream and it isn't connected to a current node 
-                    if (newStreams[i].Distance > stream.Distance && !(NodeRecord.Contains(stream.root0) || NodeRecord.Contains(stream.root1)))
+                    Stream newStream = new(node, node2.Value);
+                    for (int i = 0; i < newStreams.Length; i++)
                     {
-                        newStreams[i] = stream;
+                        if(nullBreaker < newStreams.Count())
+                        {
+                            newStreams[i] = newStream;
+                            break;
+                        }
+                        if(newStream.Distance < newStreams[i].Distance && (!(NodeRecord.Contains(newStream.root0) || NodeRecord.Contains(newStream.root1))))
+                        {
+                            Stream tempStream = newStream;
+                            newStream = newStreams[i];
+                            newStreams[i] = tempStream;
+                        }
                     }
                 }
-                NodeRecord.Add(newStreams[i].root0);
-                NodeRecord.Add(newStreams[i].root1);
             }
+            // for (int i = 0; i < newStreams.Length; i++)
+            // {
+            //     newStreams[i] = potentialStreams[0];
+            //     foreach (Stream stream in potentialStreams)
+            //     {   //if the potential new stream is smaller than the current new stream and it isn't connected to a current node 
+            //         if (newStreams[i].Distance > stream.Distance && (!(NodeRecord.Contains(stream.root0) || NodeRecord.Contains(stream.root1))))
+            //         {
+            //             newStreams[i] = stream;
+            //         }
+            //     }
+            //     NodeRecord.Add(newStreams[i].root0);
+            //     NodeRecord.Add(newStreams[i].root1);
+            // }
             foreach (Stream stream in newStreams) //creates the new streams connecting the clusters
             {
                 CreateStream(stream.root0, stream.root1);

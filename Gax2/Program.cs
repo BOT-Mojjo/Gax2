@@ -18,8 +18,10 @@
 // {
 //     Console.WriteLine(testee.ToString());
 // }
-float size = 20;
-Galaxy testGax = new Galaxy(500, 1, size);
+int test = (int)Math.Ceiling((double) 2/(2/4));
+Console.WriteLine(test);
+float size = 200;
+Galaxy testGax = new Galaxy(5000, 1f, size);
 Stream temp = new(testGax.Nodes[1], testGax.Nodes[2]);
 foreach(KeyValuePair<int, Node> node in testGax.Nodes)
 {
