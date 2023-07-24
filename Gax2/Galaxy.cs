@@ -17,11 +17,11 @@ public class Galaxy
 
         NodeGeneration(count, size);
 
-        StreamGeneration(StreamDistance);
+    //     StreamGeneration(StreamDistance);
 
-        IsolatedNodePrevention();
+    //     IsolatedNodePrevention();
 
-        IsolatedClusterPrevention();
+    //     IsolatedClusterPrevention();
     }
 
     void NoiseMapPreperation(int mapSize)
@@ -33,7 +33,7 @@ public class Galaxy
         {
             for(int y = 0; y < mapSize; y++)
             {
-                float distance =Vector2.Distance(new(x,y), center);
+                float distance = Vector2.Distance(new(x,y), center);
                 if(distance > max || distance < min) NodeNoiseMap[x,y] = 255;
             }
         }
@@ -43,7 +43,7 @@ public class Galaxy
     {   //TODO: something clearly isn't working here. Nodes generate too close to eachother
         Console.Write("Node Generation");
         double noiseMapScale = (amount/5)/size;
-        int abstractTooClose = (int) (size/(amount/15f));
+        int abstractTooClose = (int) ((amount/15f)/size);
         while(Nodes.Count < amount)
         {
             Vector3 newPoint = PointGeneration((int)size);
@@ -54,10 +54,10 @@ public class Galaxy
             }
 
             int XMin = abstractPoint.x - abstractTooClose;
-            if( XMin > 0) XMin = 0;
+            if( XMin < 0) XMin = 0;
 
             int YMin = abstractPoint.y - abstractTooClose;
-            if( YMin > 0) XMin = 0;
+            if( YMin < 0) XMin = 0;
 
             int XMax = abstractPoint.x + abstractTooClose;
             if( XMax > NodeNoiseMap.GetLength(0)) XMax = 0;
